@@ -10,7 +10,7 @@ ok(exception { Str->(undef) }, 'Str does not accept undef value',);
 is(exception { Str->('something') }, undef, 'Str',);
 
 like(exception { Str->({foo => 'something'}) },
-    qr{HASH\(\w+\) is not a string}, 'Str',);
+    qr{did not pass type constraint "Str"}, 'Str',);
 
 is(exception { Num->(34) }, undef, 'Num',);
 
@@ -18,7 +18,7 @@ ok(exception { Num->(undef) }, 'Num does not accept undef value',);
 
 like(
     exception { Num->('not a number') },
-    qr{(?i:not a number is not a Number)},
+    qr{did not pass type constraint "Num"},
     'Num fail',
 );
 
@@ -28,13 +28,13 @@ is(exception { Bool->(0) }, undef, 'Bool false value',);
 
 is(exception { Bool->(undef) }, undef, 'Bool does accepts undef value',);
 
-like(exception { Bool->('2') }, qr{2 is not a Boolean}, 'Bool fail',);
+like(exception { Bool->('2') }, qr{did not pass type constraint "Bool"}, 'Bool fail',);
 
 is(exception { RegexpRef->(qr{.*}) }, undef, 'Regexp',);
 
 like(
     exception { RegexpRef->('/.*/') },
-    qr{\Q/.*/\E is not a RegexpRef},
+    qr{did not pass type constraint "RegexpRef"},
     'Regexp fail',
 );
 
@@ -44,7 +44,7 @@ is(exception { HashRef->({goo => 'le'}) }, undef, 'HashRef',);
 
 like(
     exception { HashRef->('/.*/') },
-    qr{\Q/.*/\E is not a HashRef},
+    qr{did not pass type constraint "HashRef"},
     'HashRef fail',
 );
 
@@ -54,7 +54,7 @@ is(exception { ArrayRef->([1, 2, 3, 4]) }, undef, 'ArrayRef',);
 
 like(
     exception { ArrayRef->('/.*/') },
-    qr{\Q/.*/\E is not an ArrayRef},
+    qr{did not pass type constraint "ArrayRef"},
     'ArrayRef fail',
 );
 
@@ -69,7 +69,7 @@ is( exception {
 
 like(
     exception { CodeRef->('/.*/') },
-    qr{\Q/.*/\E is not a CodeRef},
+    qr{did not pass type constraint "CodeRef"},
     'CodeRef fail',
 );
 
@@ -88,7 +88,7 @@ is(exception { InstanceChecker::zad7->new(foo => bless {}, 'Foo') },
 
 like(
     exception { InstanceChecker::zad7->new(foo => bless {}, 'Bar') },
-    qr{Bar=HASH\(\w+\) is not an instance of the class: Foo},
+    qr{not isa Foo},
     'InstanceOf fail',
 );
 

@@ -405,7 +405,7 @@ parameters
 
 has serializer => (
     is => 'rw',
-    isa => Maybe(ConsumerOf['Dancer2::Core::Role::Serializer']),
+    isa => Maybe[ConsumerOf['Dancer2::Core::Role::Serializer']],
     required => 0,
 );
 

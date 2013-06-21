@@ -1,22 +1,19 @@
 package Dancer2::Core::Types;
 
-# ABSTRACT: Moo types for Dancer2 core.
+# ABSTRACT: types for Dancer2 core.
 
 use strict;
 use warnings;
 use Scalar::Util 'blessed', 'looks_like_number';
-use MooX::Types::MooseLike 0.16 'exception_message';
-use MooX::Types::MooseLike::Base qw/:all/;
-use MooX::Types::MooseLike::Numeric qw/:all/;
+use Type::Library -base;
+use Type::Utils -all;
 
-use Exporter 'import';
-our @EXPORT;
-our @EXPORT_OK;
-
+BEGIN { extends "Types::Standard" };
 
 =head1 DESCRIPTION
 
-Type definitions for Moo attributes. These are defined as subroutines. 
+Type definitions for Moo/Moose attributes. These are defined as Type::Tiny
+type constraints.
 
 =cut
 
@@ -32,7 +29,7 @@ my $namespace = qr/
     $
 /x;
 
-=head1 MOO TYPES 
+=head1 TYPES 
 
 =head2 ReadableFilePath($value)
 
@@ -69,59 +66,102 @@ and I<OPTIONS>.
 
 =cut
 
-my $definitions = [
-    {   name    => 'ReadableFilePath',
-        test    => sub { -e $_[0] && -r $_[0] },
-        message => sub { return exception_message($_[0], 'ReadableFilePath') }
-    },
-    {   name    => 'WritableFilePath',
-        test    => sub { -e $_[0] && -w $_[0] },
-        message => sub { return exception_message($_[0], 'WritableFilePath') }
-    },
+sub exception_message {
+    my ($val, $type) = @_;
+    $val = 'undef' unless defined $val;
+    return "$val is not $type!";
+}
 
-    # Dancer2-specific types
-    {   name       => 'Dancer2Prefix',
-        subtype_of => 'Str',
-        from       => 'MooX::Types::MooseLike::Base',
-        test       => sub {
+declare 'PositiveNum',
+    as Num,
+    where     {  $_ > 0  },
+    inline_as { "$_ > 0" },
+    message   { return exception_message($_, 'a positive number') };
 
-            # a prefix must start with the char '/'
-            # index is much faster than =~ /^\//
-            index($_[0], '/') == 0;
-        },
-        message => sub { return exception_message($_[0], 'a Dancer2Prefix') }
-    },
-    {   name       => 'Dancer2AppName',
-        subtype_of => 'Str',
-        from       => 'MooX::Types::MooseLike::Base',
-        test       => sub {
+declare 'PositiveOrZeroNum',
+    as Num,
+    where     {  $_ >= 0  },
+    inline_as { "$_ >= 0" },
+    message   { return exception_message($_, 'a positive number or zero') };
 
-            # TODO need a real check of valid app names
-            $_[0] =~ $namespace;
-        },
-        message => sub {
-            return exception_message(length($_[0]) ? $_[0] : 'Empty string',
-                'a Dancer2AppName');
-          }
+declare 'PositiveInt',
+    as Int,
+    where     {  $_ > 0  },
+    inline_as { "$_ > 0" },
+    message   { return exception_message($_, 'a positive integer') };
+
+declare 'PositiveOrZeroInt',
+    as Int,
+    where     {  $_ >= 0  },
+    inline_as { "$_ >= 0" },
+    message   { return exception_message($_, 'a positive integer or zero') };
+
+declare 'NegativeNum',
+    as Num,
+    where     {  $_ < 0  },
+    inline_as { "$_ < 0" },
+    message   { return exception_message($_, 'a negative number') };
+
+declare 'NegativeOrZeroNum',
+    as Num,
+    where     {  $_ <= 0  },
+    inline_as { "$_ <= 0" },
+    message   { return exception_message($_, 'a negative number or zero') };
+
+declare 'NegativeInt',
+    as Int,
+    where     {  $_ < 0  },
+    inline_as { "$_ < 0" },
+    message   { return exception_message($_, 'a negative integer') };
+
+declare 'NegativeOrZeroInt',
+    as Int,
+    where     {  $_ <= 0  },
+    inline_as { "$_ <= 0" },
+    message   { return exception_message($_, 'a negative integer or zero') };
+
+declare 'SingleDigit',
+    as 'PositiveOrZeroInt',
+    where     {  $_ < 10  },
+    inline_as { "$_ < 10" },
+    message   { return exception_message($_, 'a single digit') };
+
+declare 'ReadableFilePath',
+    where     {  -e $_ && -r $_  },
+    inline_as { "-e $_ && -r $_" },
+    message   { return exception_message($_, 'ReadableFilePath') };
+
+declare 'WritableFilePath',
+    where     {  -e $_ && -w $_  },
+    inline_as { "-e $_ && -w $_" },
+    message   { return exception_message($_, 'WritableFilePath') };
+
+declare 'Dancer2Prefix',
+    as Str,
+    where {
+        # a prefix must start with the char '/'
+        # index is much faster than =~ /^\//
+        index($_, '/') == 0;
     },
-    {   name       => 'Dancer2Method',
-        subtype_of => 'Str',
-        from       => 'MooX::Types::MooseLike::Base',
-        test       => sub {
-            grep {/^$_[0]$/} qw(get head post put delete options patch);
-        },
-        message => sub { return exception_message($_[0], 'a Dancer2Method') }
-    },
-    {   name       => 'Dancer2HTTPMethod',
-        subtype_of => 'Str',
-        from       => 'MooX::Types::MooseLike::Base',
-        test       => sub {
-            grep {/^$_[0]$/} qw(GET HEAD POST PUT DELETE OPTIONS PATCH);
-        },
-        message =>
-          sub { return exception_message($_[0], 'a Dancer2HTTPMethod') }
-    },
-];
+    inline_as { "index($_, q[/])==0" },
+    message   { return exception_message($_, 'a Dancer2Prefix') };
+
+declare 'Dancer2AppName',
+    as StrMatch[$namespace],
+    message   {
+        return exception_message(
+            length($_) ? $_ : 'Empty string',
+            'a Dancer2AppName',
+        );
+    };
+
+declare 'Dancer2Method',
+    as Enum[qw(get head post put delete options patch)],
+    message { return exception_message($_, 'a Dancer2Method') };
+
+declare 'Dancer2HTTPMethod',
+    as Enum[qw(GET HEAD POST PUT DELETE OPTIONS PATCH)],
+    message { return exception_message($_, 'a Dancer2HTTPMethod') };
 
 # generate abbreviated class types for core dancer objects
 for my $type (
@@ -145,29 +185,24 @@ for my $type (
     /
   )
 {
-    push @$definitions, {
-        name => $type,
-        test => sub {
-            return
-                 $_[0]
-              && blessed($_[0])
-              && ref($_[0]) eq 'Dancer2::Core::' . $type;
-        },
-        message =>
-          sub {"The value `$_[0]' does not pass the constraint check."}
-    };
+    class_type($type, {
+        class   => "Dancer2::Core::$type",
+        message => sub { "The value `$_[0]' does not pass the constraint check." },
+    });
 }
 
-MooX::Types::MooseLike::register_types($definitions, __PACKAGE__);
-
-# Export everything by default.
-@EXPORT = (@MooX::Types::MooseLike::Base::EXPORT_OK, @EXPORT_OK);
+# Export (almost) everything by default.
+sub import {
+    push @_, qw( -types -is -to ) unless @_ > 1;
+    my $super = "Type::Library"->can("import");
+    goto $super;
+}
 
 1;
 
 =head1 SEE ALSO
 
-L<MooX::Types::MooseLike> for more available types
+L<Types::Standard> for more available types
 
 =cut
 
